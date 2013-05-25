@@ -23,14 +23,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     w = 590;
 
+    ui->actionKMeans_Algorithm->setEnabled(false);
+    ui->actionKohonen_s_Algorithm->setEnabled(false);
+    ui->actionNeural_Gas_Algorithm->setEnabled(false);
+    ui->actionSet_Data->setEnabled(false);
+
     connect(ui->actionSet_Data,SIGNAL(triggered()),this,SLOT(setData()));
     connect(ui->actionSet_Centroids,SIGNAL(triggered()),this,SLOT(setCentroids()));
-
-
-//    kmeans.setCentroids(centroids);
-//    kmeans.setInputData(points);
-
-//    kmeans.start();
+    connect(ui->actionKMeans_Algorithm,SIGNAL(triggered()),this,SLOT(kmeansSwitch()));
+    connect(ui->actionKohonen_s_Algorithm,SIGNAL(triggered()),this,SLOT(kohonenSwitch()));
+    connect(ui->actionNeural_Gas_Algorithm,SIGNAL(triggered()),this,SLOT(neuralGasSwitch()));
 
     QShortcut *repaint = new QShortcut(QKeySequence("SPACE"),this);
     connect(repaint,SIGNAL(activated()),this,SLOT(update()));
@@ -47,20 +49,47 @@ MainWindow::~MainWindow()
 
 void MainWindow::paintEvent(QPaintEvent *)
 {
-    //kmeansUpdate(painter);
+    switch(switcher) {
+    case(PaintSwitch::KMEANS):
+        kmeansUpdate(painter);
+        qDebug() << "KMeans";
+        break;
+    case(PaintSwitch::KOHONEN):
+        qDebug() << "Kohonen";
+        break;
+    case(PaintSwitch::NEURALGAS):
+        qDebug() << "Neural gas";
+        break;
+    }
 }
-
-// ============= Data preparation ============= //
-
-
 
 // ============= UI Signal handling =========== //
 
 void MainWindow::kmeansSwitch() {
+    switcher = PaintSwitch::KMEANS;
+    kmeans.setCentroids(centroids);
+    kmeans.setInputData(points);
 
+    kmeans.start();
+
+    update();
+}
+
+void MainWindow::neuralGasSwitch() {
+    switcher = PaintSwitch::NEURALGAS;
+
+    update();
+}
+
+void MainWindow::kohonenSwitch() {
+    switcher = PaintSwitch::KOHONEN;
+
+    update();
 }
 
 void MainWindow::setData() {
+
+    points.clear();
 
     QFile file;
     file.setFileName(QFileDialog::getOpenFileName(this,tr("Open file"),"C:\\Users\\GiBSoN\\Desktop",tr("Text files (*.txt)")));
@@ -81,19 +110,43 @@ void MainWindow::setData() {
 
     adjustPoints(w);
 
-    qDebug() << "Loaded " << points.size() << " points";
+    kmeans.setInputData(points);
+    kmeans.start();
+
+    ui->actionKMeans_Algorithm->setEnabled(true);
+    ui->actionKohonen_s_Algorithm->setEnabled(true);
+    ui->actionNeural_Gas_Algorithm->setEnabled(true);
+
+    qDebug() << "Loaded " << points.size() << " points.";
 }
 
 void MainWindow::setCentroids() {
     WORD centroidsCount = QInputDialog::getInt(this,tr("Set number of centroids/neurons"),tr("Number of centroids"));
+    qDebug() << "Setting " << centroidsCount << " centroids.";
+
+    WORD dimension = QInputDialog::getInt(this,tr("Set number of dimensions"),tr("Dimensions"));
+    qDebug() << "Setting " << dimension << " dimensions.";
+
+    centroids = Centroids::randomizeCentroids(centroidsCount,dimension,0,w);
+
+    colors.clear();
+    for(int i=0;i<centroidsCount;i++)
+        colors.push_back(generateColor());
+
+    kmeans.setCentroids(centroids);
+    kmeans.start();
+    ui->actionSet_Data->setEnabled(true);
 }
 
 // ============= KMEANS Section ==================== //
 
-void MainWindow::paintKMeans(QPainter &painter) {
+void MainWindow::kmeansUpdate(QPainter &painter) { // paints updated kmeans + voronoi
 
     QPen penColor;
     QBrush brushColor(Qt::SolidPattern);
+    QPainterPath path;
+
+    painter.begin(this);
 
     for(KPoint &i : kmeans.getPoints()) {
         penColor.setColor(colors[i.getGroup()-1]);
@@ -109,19 +162,12 @@ void MainWindow::paintKMeans(QPainter &painter) {
             brushColor.setColor(Qt::black);
             painter.setPen(penColor);
             painter.setBrush(brushColor);
-            painter.drawRect(i.getParams()[0],i.getParams()[1],7,7);
+            painter.drawRect(i.getParams()[0],i.getParams()[1],15,15);
         }
     }
-}
-
-void MainWindow::kmeansUpdate(QPainter &painter) { // paints updated kmeans + voronoi
-    painter.begin(this);
-
-    paintKMeans(painter);
 
     centroids = kmeans.getCentroids();
 
-    QPainterPath path;
     for(WORD i=0;i<centroids.size();i++) {
         if(centroids[i].getParams()[0] != 0)
             ver->push_back(new VPoint(centroids[i].getParams()[0],centroids[i].getParams()[1]));
@@ -138,6 +184,10 @@ void MainWindow::kmeansUpdate(QPainter &painter) { // paints updated kmeans + vo
         painter.drawPath(path);
         path = QPainterPath();
     }
+
+    painter.setPen(QPen(QColor(Qt::white)));
+    painter.fillRect(w-135,18,135,20,Qt::SolidPattern);
+    painter.drawText(w-135,35,"Quantization error: " + QString::number(kmeans.getQuantizationError()));
 
     painter.end();
     ver->clear();

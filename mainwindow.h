@@ -35,6 +35,8 @@ protected:
     void paintEvent(QPaintEvent *);
 private slots:
     void kmeansSwitch();
+    void kohonenSwitch();
+    void neuralGasSwitch();
     void setData();
     void setCentroids();
 private:
@@ -61,7 +63,6 @@ private:
     void adjustPoints(double size);
 
     // KMEANS //
-    void paintKMeans(QPainter &painter);
     void kmeansUpdate(QPainter &painter);
 };
 
