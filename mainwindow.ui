@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>301</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralWidget"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>301</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuMenu">
+    <property name="title">
+     <string>Menu</string>
+    </property>
+    <addaction name="actionKMeans_Algorithm"/>
+    <addaction name="actionKohonen_s_Algorithm"/>
+    <addaction name="actionNeural_Gas_Algorithm"/>
+    <addaction name="separator"/>
+    <addaction name="actionSet_Centroids"/>
+    <addaction name="actionSet_Data"/>
+   </widget>
+   <addaction name="menuMenu"/>
+  </widget>
+  <action name="actionKMeans_Algorithm">
+   <property name="text">
+    <string>KMeans Algorithm</string>
+   </property>
+  </action>
+  <action name="actionKohonen_s_Algorithm">
+   <property name="text">
+    <string>Kohonen's Algorithm</string>
+   </property>
+  </action>
+  <action name="actionNeural_Gas_Algorithm">
+   <property name="text">
+    <string>Neural Gas Algorithm</string>
+   </property>
+  </action>
+  <action name="actionSet_Centroids">
+   <property name="text">
+    <string>Set Centroids</string>
+   </property>
+  </action>
+  <action name="actionSet_Data">
+   <property name="text">
+    <string>Set Data</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>
