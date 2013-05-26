@@ -30,6 +30,7 @@ void KMeans::randomizeCentroids(WORD quantity, BYTE dimensions, double min, doub
 void KMeans::start() {
     outCentroids = inCentroids;
     outputPoints = inputPoints;
+    end = false;
 
     //setting centroids groups //
     for(int i=1;i<=outCentroids.size();i++)

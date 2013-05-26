@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     this->setGeometry(300,50,600,600);
+    this->setFixedSize(600,600);
     this->setWindowTitle("Voronoi diagram");
 
     edg = new Edges();
