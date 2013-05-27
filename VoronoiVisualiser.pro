@@ -16,20 +16,15 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    Neuron/sigmoidalfunction.cpp \
-    Neuron/neuron.cpp \
-    Neuron/abstractfunction.cpp \
     Fortune/VParabola.cpp \
     Fortune/voronoi.cpp \
     Controller/Centroids.cpp \
     Controller/kmeans.cpp \
     Model/cpoint.cpp \
-    Model/kpoint.cpp
+    Model/kpoint.cpp \
+    Controller/kohonen.cpp
 
 HEADERS  += mainwindow.h \
-    Neuron/sigmoidalfunction.h \
-    Neuron/neuron.h \
-    Neuron/abstractfunction.h \
     Fortune/VPoint.h \
     Fortune/VParabola.h \
     Fortune/voronoi.h \
@@ -39,7 +34,8 @@ HEADERS  += mainwindow.h \
     Controller/Centroids.h \
     Controller/kmeans.h \
     Model/cpoint.h \
-    Model/kpoint.h
+    Model/kpoint.h \
+    Controller/kohonen.h
 
 
 FORMS    += mainwindow.ui

@@ -33,12 +33,14 @@ public:
     ~MainWindow();
 protected:
     void paintEvent(QPaintEvent *);
+    void resizeEvent(QResizeEvent *);
 private slots:
     void kmeansSwitch();
     void kohonenSwitch();
     void neuralGasSwitch();
     void setData();
     void setCentroids();
+    void doAction();
 private:
     Ui::MainWindow *ui;
 
@@ -50,8 +52,6 @@ private:
 
     std::default_random_engine engine;
 
-    QVector<CPoint> centroids;
-    QVector<KPoint> points;
     KMeans kmeans;
     QVector<QColor> colors;
     QPainter painter;
@@ -60,7 +60,6 @@ private:
     QColor generateColor();
     void generatePoints();
     VPoint *dRand(double min, double max, std::default_random_engine engine);
-    void adjustPoints(double size);
 
     // KMEANS //
     void kmeansUpdate(QPainter &painter);

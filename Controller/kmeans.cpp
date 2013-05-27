@@ -3,8 +3,6 @@
 #include "Controller/Centroids.h"
 #include <QDebug>
 
-QDebug deb = qDebug();
-
 KMeans::KMeans(QVector<KPoint> &inputData) : inputPoints(inputData), end(false) {
 }
 
@@ -75,6 +73,30 @@ bool KMeans::update() {
 
     end = true;
     return false;
+}
+
+void KMeans::normalizePoints(double size) {
+
+    // getting min and max
+    double min=0,max=0;
+
+    for(int i=0;i<inputPoints.size();i++) {
+        for(int j=0;j<inputPoints[i].getParams().size();j++) {
+            if(min > inputPoints[i].getParams()[j])
+                min = inputPoints[i].getParams()[j];
+            if(max < inputPoints[i].getParams()[j])
+                max = inputPoints[i].getParams()[j];
+        }
+    }
+
+    double multiplier = size/(max+abs(min));
+
+    for(int i=0;i<inputPoints.size();i++) {
+        for(int j=0;j<inputPoints[i].getParams().size();j++) {
+            inputPoints[i].getParams()[j] += abs(min);
+            inputPoints[i].getParams()[j] *= multiplier;
+        }
+    }
 }
 
 // ============= PRIVATE =============== //

@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     this->setGeometry(300,50,600,600);
-    this->setFixedSize(600,600);
+    //this->setFixedSize(600,600);
     this->setWindowTitle("Voronoi diagram");
 
     edg = new Edges();
@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionNeural_Gas_Algorithm,SIGNAL(triggered()),this,SLOT(neuralGasSwitch()));
 
     QShortcut *repaint = new QShortcut(QKeySequence("SPACE"),this);
-    connect(repaint,SIGNAL(activated()),this,SLOT(update()));
+    connect(repaint,SIGNAL(activated()),this,SLOT(doAction()));
 }
 
 MainWindow::~MainWindow()
@@ -64,13 +64,15 @@ void MainWindow::paintEvent(QPaintEvent *)
     }
 }
 
+void MainWindow::resizeEvent(QResizeEvent *) {
+    kmeans.normalizePoints(this->height());
+    kmeans.start();
+}
+
 // ============= UI Signal handling =========== //
 
 void MainWindow::kmeansSwitch() {
     switcher = PaintSwitch::KMEANS;
-    kmeans.setCentroids(centroids);
-    kmeans.setInputData(points);
-
     kmeans.start();
 
     update();
@@ -90,7 +92,9 @@ void MainWindow::kohonenSwitch() {
 
 void MainWindow::setData() {
 
-    points.clear();
+    switcher = PaintSwitch::NOTHING;
+
+    QVector<KPoint> points;
 
     QFile file;
     file.setFileName(QFileDialog::getOpenFileName(this,tr("Open file"),"C:\\Users\\GiBSoN\\Desktop",tr("Text files (*.txt)")));
@@ -109,10 +113,8 @@ void MainWindow::setData() {
         params.clear();
     }
 
-    adjustPoints(w);
-
     kmeans.setInputData(points);
-    kmeans.start();
+    kmeans.normalizePoints(this->height()-10);
 
     ui->actionKMeans_Algorithm->setEnabled(true);
     ui->actionKohonen_s_Algorithm->setEnabled(true);
@@ -122,20 +124,24 @@ void MainWindow::setData() {
 }
 
 void MainWindow::setCentroids() {
+
+    switcher = PaintSwitch::NOTHING;
+
+    QVector<CPoint> centroids;
+
     WORD centroidsCount = QInputDialog::getInt(this,tr("Set number of centroids/neurons"),tr("Number of centroids"));
     qDebug() << "Setting " << centroidsCount << " centroids.";
 
     WORD dimension = QInputDialog::getInt(this,tr("Set number of dimensions"),tr("Dimensions"));
     qDebug() << "Setting " << dimension << " dimensions.";
 
-    centroids = Centroids::randomizeCentroids(centroidsCount,dimension,0,w);
+    centroids = Centroids::randomizeCentroids(centroidsCount,dimension,0,this->height());
 
     colors.clear();
     for(int i=0;i<centroidsCount;i++)
         colors.push_back(generateColor());
 
     kmeans.setCentroids(centroids);
-    kmeans.start();
     ui->actionSet_Data->setEnabled(true);
 }
 
@@ -167,13 +173,13 @@ void MainWindow::kmeansUpdate(QPainter &painter) { // paints updated kmeans + vo
         }
     }
 
-    centroids = kmeans.getCentroids();
+    // Voronoi drawing
 
-    for(WORD i=0;i<centroids.size();i++) {
-        if(centroids[i].getParams()[0] != 0)
-            ver->push_back(new VPoint(centroids[i].getParams()[0],centroids[i].getParams()[1]));
+    for(WORD i=0;i<kmeans.getCentroids().size();i++) {
+        if(kmeans.getCentroids()[i].getParams()[0] != 0)
+            ver->push_back(new VPoint(kmeans.getCentroids()[i].getParams()[0],kmeans.getCentroids()[i].getParams()[1]));
     }
-    edg = v->GetEdges(ver, w, w);
+    edg = v->GetEdges(ver, this->width(), this->height());
 
     QPen pen(QColor(Qt::red));
     pen.setWidth(2);
@@ -187,12 +193,16 @@ void MainWindow::kmeansUpdate(QPainter &painter) { // paints updated kmeans + vo
     }
 
     painter.setPen(QPen(QColor(Qt::white)));
-    painter.fillRect(w-135,18,135,20,Qt::SolidPattern);
-    painter.drawText(w-135,35,"Quantization error: " + QString::number(kmeans.getQuantizationError()));
+    painter.fillRect(this->width()-200,18,200,20,Qt::SolidPattern);
+    painter.drawText(this->width()-200,35,"Quantization error: " + QString::number(kmeans.getQuantizationError()));
 
     painter.end();
     ver->clear();
+}
+
+void MainWindow::doAction() {
     kmeans.update();
+    update();
 }
 
 // ============= PRIVATE ================ //
@@ -211,30 +221,6 @@ void MainWindow::generatePoints()
     {
         ver->push_back(dRand(0,w,engine));
         dir->push_back(dRand(-1,1,engine));
-    }
-}
-
-void MainWindow::adjustPoints(double size) {
-
-    // getting min and max
-    double min=0,max=0;
-
-    for(int i=0;i<points.size();i++) {
-        for(int j=0;j<points[i].getParams().size();j++) {
-            if(min > points[i].getParams()[j])
-                min = points[i].getParams()[j];
-            if(max < points[i].getParams()[j])
-                max = points[i].getParams()[j];
-        }
-    }
-
-    double multiplier = size/(max+abs(min));
-
-    for(int i=0;i<points.size();i++) {
-        for(int j=0;j<points[i].getParams().size();j++) {
-            points[i].getParams()[j] += abs(min);
-            points[i].getParams()[j] *= multiplier;
-        }
     }
 }
 

@@ -1,30 +1,31 @@
-#ifndef KMEANS_H
-#define KMEANS_H
+#ifndef KOHONEN_H
+#define KOHONEN_H
 
 #include <Model/cpoint.h>
 #include <Model/kpoint.h>
 
-class KMeans
+class Kohonen
 {
 private:
     QVector<KPoint> inputPoints, outputPoints;
     QVector<CPoint> inCentroids, outCentroids;
     bool end;
     double quantizationError;
+    double alpha;
 
     double countDistance(KPoint &i, CPoint &j);
-    void setGroup(KPoint &point, QVector<CPoint> &centroids);
     void updateCentroids();
 public:
-    KMeans(QVector<KPoint> &inputData);
-    KMeans(QVector<KPoint> &inputData, QVector<CPoint> &centroids);
-    KMeans();
+    Kohonen(QVector<KPoint> &inputData);
+    Kohonen(QVector<KPoint> &inputData, QVector<CPoint> &centroids);
+    Kohonen();
 
+    void normalizePoints(double size);
+    void setAlpha(double alpha) { this->alpha = alpha; }
     void setInputData(QVector<KPoint> &inputData);
     void setCentroids(QVector<CPoint> &centroids);
 
     void randomizeCentroids(WORD quantity, BYTE dimensions, double min, double max);
-    void normalizePoints(double size);
 
     void start();
     bool update();
@@ -32,7 +33,6 @@ public:
     QVector<CPoint> getCentroids()const { return outCentroids; }
     QVector<KPoint> getPoints()const { return outputPoints; }
     double getQuantizationError()const { return quantizationError; }
-
 };
 
-#endif // KMEANS_H
+#endif // KOHONEN_H
