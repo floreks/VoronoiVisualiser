@@ -2,7 +2,6 @@
 #include "ui_mainwindow.h"
 
 #include <QDebug>
-#include <QMessageBox>
 #include <QShortcut>
 #include <QFile>
 #include <QFileDialog>
@@ -14,15 +13,16 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     this->setGeometry(300,50,600,600);
-    //this->setFixedSize(600,600);
     this->setWindowTitle("Voronoi diagram");
+    //this->setPalette();
 
     edg = new Edges();
     ver = new Vertices();
     v = new Voronoi();
     dir = new Vertices();
 
-    w = 590;
+    nGas = NeuralGas(0.005,0.4,0.01);
+    kohonen = Kohonen(4,0.05);
 
     ui->actionKMeans_Algorithm->setEnabled(false);
     ui->actionKohonen_s_Algorithm->setEnabled(false);
@@ -53,13 +53,14 @@ void MainWindow::paintEvent(QPaintEvent *)
     switch(switcher) {
     case(PaintSwitch::KMEANS):
         kmeansUpdate(painter);
-        qDebug() << "KMeans";
         break;
     case(PaintSwitch::KOHONEN):
-        qDebug() << "Kohonen";
+        kohonenUpdate(painter);
         break;
     case(PaintSwitch::NEURALGAS):
-        qDebug() << "Neural gas";
+        neuralGasUpdate(painter);
+        break;
+    case(PaintSwitch::NOTHING):
         break;
     }
 }
@@ -67,6 +68,12 @@ void MainWindow::paintEvent(QPaintEvent *)
 void MainWindow::resizeEvent(QResizeEvent *) {
     kmeans.normalizePoints(this->height());
     kmeans.start();
+
+    nGas.normalizePoints(this->height());
+    nGas.start();
+
+    kohonen.normalizePoints(this->height());
+    kohonen.start();
 }
 
 // ============= UI Signal handling =========== //
@@ -80,12 +87,14 @@ void MainWindow::kmeansSwitch() {
 
 void MainWindow::neuralGasSwitch() {
     switcher = PaintSwitch::NEURALGAS;
+    nGas.start();
 
     update();
 }
 
 void MainWindow::kohonenSwitch() {
     switcher = PaintSwitch::KOHONEN;
+    kohonen.start();
 
     update();
 }
@@ -100,7 +109,7 @@ void MainWindow::setData() {
     file.setFileName(QFileDialog::getOpenFileName(this,tr("Open file"),"C:\\Users\\GiBSoN\\Desktop",tr("Text files (*.txt)")));
 
     if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
-        QTimer::singleShot(1, qApp, SLOT(quit()));
+        return;
 
     QTextStream in(&file);
     while (!in.atEnd()) {
@@ -115,6 +124,12 @@ void MainWindow::setData() {
 
     kmeans.setInputData(points);
     kmeans.normalizePoints(this->height()-10);
+
+    nGas.setInputData(points);
+    nGas.normalizePoints(this->height()-10);
+
+    kohonen.setInputData(points);
+    kohonen.normalizePoints(this->height()-10);
 
     ui->actionKMeans_Algorithm->setEnabled(true);
     ui->actionKohonen_s_Algorithm->setEnabled(true);
@@ -135,13 +150,15 @@ void MainWindow::setCentroids() {
     WORD dimension = QInputDialog::getInt(this,tr("Set number of dimensions"),tr("Dimensions"));
     qDebug() << "Setting " << dimension << " dimensions.";
 
-    centroids = Centroids::randomizeCentroids(centroidsCount,dimension,0,this->height());
+    centroids = Centroids::randomizeCentroids(centroidsCount,dimension,50,this->height()-50);
 
     colors.clear();
     for(int i=0;i<centroidsCount;i++)
         colors.push_back(generateColor());
 
     kmeans.setCentroids(centroids);
+    nGas.setCentroids(centroids);
+    kohonen.setCentroids(centroids);
     ui->actionSet_Data->setEnabled(true);
 }
 
@@ -160,28 +177,28 @@ void MainWindow::kmeansUpdate(QPainter &painter) { // paints updated kmeans + vo
         brushColor.setColor(colors[i.getGroup()-1]);
         painter.setPen(penColor);
         painter.setBrush(brushColor);
-        painter.drawEllipse(i.getParams()[0],i.getParams()[1],5,5);
+        painter.drawEllipse(i.paramAt(0),i.paramAt(1),5,5);
     }
 
     for(CPoint &i : kmeans.getCentroids()) {
-        if(i.getParams()[0] != 0) {
+        if(i.paramAt(0) != 0) {
             penColor.setColor(colors[i.getGroup()-1]);
             brushColor.setColor(Qt::black);
             painter.setPen(penColor);
             painter.setBrush(brushColor);
-            painter.drawRect(i.getParams()[0],i.getParams()[1],15,15);
+            painter.drawRect(i.paramAt(0)-4,i.paramAt(1)-4,8,8);
         }
     }
 
     // Voronoi drawing
 
     for(WORD i=0;i<kmeans.getCentroids().size();i++) {
-        if(kmeans.getCentroids()[i].getParams()[0] != 0)
-            ver->push_back(new VPoint(kmeans.getCentroids()[i].getParams()[0],kmeans.getCentroids()[i].getParams()[1]));
+        if(kmeans.getCentroids()[i].paramAt(0) != 0)
+            ver->push_back(new VPoint(kmeans.getCentroids()[i].paramAt(0),kmeans.getCentroids()[i].paramAt(1)));
     }
     edg = v->GetEdges(ver, this->width(), this->height());
 
-    QPen pen(QColor(Qt::red));
+    QPen pen(QColor(Qt::black));
     pen.setWidth(2);
     painter.setPen(pen);
     for(Edges::iterator i = edg->begin(); i!= edg->end(); ++i)
@@ -200,9 +217,132 @@ void MainWindow::kmeansUpdate(QPainter &painter) { // paints updated kmeans + vo
     ver->clear();
 }
 
+// =================== Neural Gas Section ================== //
+
+void MainWindow::neuralGasUpdate(QPainter &painter) {
+
+    QPainterPath path;
+    QPen penColor;
+    QBrush brushColor(Qt::SolidPattern);
+
+    painter.begin(this);
+
+    //penColor.setColor(QColor(Qt::black));
+    //painter.setPen(penColor);
+
+    for(KPoint &i : nGas.getPoints()) {
+        penColor.setColor(QColor(Qt::gray));
+        brushColor.setColor(Qt::gray);
+        painter.setBrush(brushColor);
+        painter.setPen(penColor);
+        painter.drawEllipse(i.paramAt(0),i.paramAt(1),5,5);
+    }
+
+    for(CPoint &i : nGas.getCentroids()) {
+        brushColor.setColor(Qt::black);
+        penColor.setColor(Qt::black);
+        painter.setPen(penColor);
+        painter.setBrush(brushColor);
+        painter.drawRect(i.paramAt(0)-4,i.paramAt(1)-4,8,8);
+    }
+
+    // Voronoi drawing
+
+    for(WORD i=0;i<nGas.getCentroids().size();i++) {
+        if(nGas.getCentroids()[i].paramAt(0) != 0)
+            ver->push_back(new VPoint(nGas.getCentroids()[i].paramAt(0),nGas.getCentroids()[i].paramAt(1)));
+    }
+    edg = v->GetEdges(ver, this->width(), this->height());
+
+    QPen pen(QColor(Qt::black));
+    pen.setWidth(2);
+    painter.setPen(pen);
+    for(Edges::iterator i = edg->begin(); i!= edg->end(); ++i)
+    {
+        path.moveTo((*i)->start->x,  (*i)->start->y);
+        path.lineTo((*i)->end->x, (*i)->end->y);
+        painter.drawPath(path);
+        path = QPainterPath();
+    }
+
+    painter.setPen(QPen(QColor(Qt::white)));
+    painter.fillRect(this->width()-200,18,200,20,Qt::SolidPattern);
+    painter.drawText(this->width()-200,35,"Quantization error: " + QString::number(nGas.getQuantizationError()));
+
+    painter.end();
+    ver->clear();
+}
+
+// ================ Kohonen section =================== //
+
+void MainWindow::kohonenUpdate(QPainter &painter) {
+
+    QPainterPath path;
+    QPen penColor;
+    QBrush brushColor(Qt::SolidPattern);
+
+    painter.begin(this);
+
+    for(KPoint &i : kohonen.getPoints()) {
+        penColor.setColor(QColor(Qt::gray));
+        brushColor.setColor(QColor(Qt::gray));
+        painter.setPen(penColor);
+        painter.setBrush(brushColor);
+        painter.drawEllipse(i.paramAt(0),i.paramAt(1),5,5);
+    }
+
+    for(CPoint &i : kohonen.getCentroids()) {
+        penColor.setColor(Qt::black);
+        brushColor.setColor(Qt::black);
+        painter.setPen(penColor);
+        painter.setBrush(brushColor);
+        painter.drawRect(i.paramAt(0)-4,i.paramAt(1)-4,8,8);
+    }
+
+    // Voronoi drawing
+
+    for(WORD i=0;i<kohonen.getCentroids().size();i++) {
+        if(kohonen.getCentroids()[i].paramAt(0) != 0)
+            ver->push_back(new VPoint(kohonen.getCentroids()[i].paramAt(0),kohonen.getCentroids()[i].paramAt(1)));
+    }
+    edg = v->GetEdges(ver, this->width(), this->height());
+
+    QPen pen(QColor(Qt::black));
+    pen.setWidth(2);
+    painter.setPen(pen);
+    for(Edges::iterator i = edg->begin(); i!= edg->end(); ++i)
+    {
+        path.moveTo((*i)->start->x,  (*i)->start->y);
+        path.lineTo((*i)->end->x, (*i)->end->y);
+        painter.drawPath(path);
+        path = QPainterPath();
+    }
+
+    painter.setPen(QPen(QColor(Qt::white)));
+    painter.fillRect(this->width()-200,18,200,20,Qt::SolidPattern);
+    painter.drawText(this->width()-200,35,"Quantization error: " + QString::number(kohonen.getQuantizationError()));
+
+    painter.end();
+    ver->clear();
+}
+
 void MainWindow::doAction() {
-    kmeans.update();
-    update();
+    switch(switcher) {
+    case(PaintSwitch::KMEANS):
+        kmeans.update();
+        update();
+        break;
+    case(PaintSwitch::KOHONEN):
+        kohonen.update();
+        update();
+        break;
+    case(PaintSwitch::NEURALGAS):
+        nGas.update();
+        update();
+        break;
+    case(PaintSwitch::NOTHING):
+        break;
+    }
 }
 
 // ============= PRIVATE ================ //
@@ -219,7 +359,7 @@ void MainWindow::generatePoints()
 {
     for(int i=0; i<50; i++)
     {
-        ver->push_back(dRand(0,w,engine));
+        ver->push_back(dRand(0,this->height(),engine));
         dir->push_back(dRand(-1,1,engine));
     }
 }

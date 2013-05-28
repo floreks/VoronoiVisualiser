@@ -12,6 +12,8 @@
 
 #include "Controller/kmeans.h"
 #include "Controller/Centroids.h"
+#include "Controller/neuralgas.h"
+#include "Controller/kohonen.h"
 
 enum PaintSwitch {
     KMEANS = 0x01,
@@ -48,11 +50,12 @@ private:
     Vertices *ver;
     Vertices *dir;
     Edges *edg;
-    double w;
 
     std::default_random_engine engine;
 
     KMeans kmeans;
+    NeuralGas nGas;
+    Kohonen kohonen;
     QVector<QColor> colors;
     QPainter painter;
     PaintSwitch switcher;
@@ -61,8 +64,9 @@ private:
     void generatePoints();
     VPoint *dRand(double min, double max, std::default_random_engine engine);
 
-    // KMEANS //
     void kmeansUpdate(QPainter &painter);
+    void neuralGasUpdate(QPainter &painter);
+    void kohonenUpdate(QPainter &painter);
 };
 
 #endif // MAINWINDOW_H

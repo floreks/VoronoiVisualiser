@@ -59,15 +59,15 @@ void    Voronoi::InsertParabola(VPoint * p)
 {
     if(!root){root = new VParabola(p); return;}
 
-    if(root->isLeaf && root->site->y - p->y < 1) // degenerovaný případ - obě spodní místa ve stejné výšce
+    if(root->isLeaf && root->site->y - p->y < 1)
     {
         VPoint * fp = root->site;
         root->isLeaf = false;
         root->SetLeft( new VParabola(fp) );
         root->SetRight(new VParabola(p)  );
-        VPoint * s = new VPoint((p->x + fp->x)/2, height); // začátek hrany uprostřed míst
+        VPoint * s = new VPoint((p->x + fp->x)/2, height);
         points.push_back(s);
-        if(p->x > fp->x) root->edge = new VEdge(s, fp, p); // rozhodnu, který vlevo, který vpravo
+        if(p->x > fp->x) root->edge = new VEdge(s, fp, p);
         else root->edge = new VEdge(s, p, fp);
         edges->push_back(root->edge);
         return;
@@ -90,7 +90,6 @@ void    Voronoi::InsertParabola(VPoint * p)
     el->neighbour = er;
     edges->push_back(el);
 
-    // přestavuju strom .. vkládám novou parabolu
     par->edge = er;
     par->isLeaf = false;
 
@@ -118,8 +117,6 @@ void	Voronoi::RemoveParabola(VEvent * e)
 
     VParabola * p0 = VParabola::GetLeftChild(xl);
     VParabola * p2 = VParabola::GetRightChild(xr);
-
-    if(p0 == p2) std::cout << "chyba - pravá a levá parabola má stejné ohnisko!\n";
 
     if(p0->cEvent){ deleted.insert(p0->cEvent); p0->cEvent = 0; }
     if(p2->cEvent){ deleted.insert(p2->cEvent); p2->cEvent = 0; }
@@ -214,7 +211,7 @@ VParabola * Voronoi::GetParabolaByX(double xx)
     VParabola * par = root;
     double x = 0.0;
 
-    while(!par->isLeaf) // projdu stromem dokud nenarazím na vhodný list
+    while(!par->isLeaf)
     {
         x = GetXOfEdge(par, ly);
         if(x>xx) par = par->Left();
@@ -223,7 +220,7 @@ VParabola * Voronoi::GetParabolaByX(double xx)
     return par;
 }
 
-double	Voronoi::GetY(VPoint * p, double x) // ohnisko, x-souřadnice
+double	Voronoi::GetY(VPoint * p, double x)
 {
     double dp = 2 * (p->y - ly);
     double a1 = 1 / dp;

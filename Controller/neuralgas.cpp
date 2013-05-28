@@ -1,6 +1,6 @@
-#include "kohonen.h"
-
+#include "neuralgas.h"
 #include "Controller/Centroids.h"
+
 #include <QDebug>
 
 class SortByDistance {
@@ -10,77 +10,80 @@ public:
     }
 };
 
-Kohonen::Kohonen() {
+NeuralGas::NeuralGas() {
     end = false;
 }
 
-Kohonen::Kohonen(QVector<KPoint> &inputData, QVector<CPoint> &centroids) : inputPoints(inputData), inCentroids(centroids) {
+NeuralGas::NeuralGas(double alphaMin, double alphaMax, double lambdaMin) {
+    end = false;
+    this->alphaMin = alphaMin;
+    this->alphaMax = alphaMax;
+    this->lambdaMin = lambdaMin;
+}
+
+NeuralGas::NeuralGas(QVector<KPoint> &inputData, QVector<CPoint> &centroids) : inputPoints(inputData), inCentroids(centroids) {
     end = false;
 }
 
-Kohonen::Kohonen(QVector<KPoint> &inputData) : inputPoints(inputData) {
+NeuralGas::NeuralGas(QVector<KPoint> &inputData) : inputPoints(inputData) {
     end = false;
 }
 
-Kohonen::Kohonen(double alpha, double lambda) {
-    end = false;
-    this->alpha = alpha;
-    this->lambda = lambda;
-}
-
-void Kohonen::setCentroids(QVector<CPoint> &centroids) {
+void NeuralGas::setCentroids(QVector<CPoint> &centroids) {
     this->inCentroids = centroids;
 }
 
-void Kohonen::setInputData(QVector<KPoint> &inputData) {
+void NeuralGas::setInputData(QVector<KPoint> &inputData) {
     this->inputPoints = inputData;
 }
 
-void Kohonen::randomizeCentroids(WORD quantity, BYTE dimensions, double min, double max) {
+void NeuralGas::randomizeCentroids(WORD quantity, BYTE dimensions, double min, double max) {
     this->inCentroids = Centroids::randomizeCentroids(quantity,dimensions,min,max);
 }
 
-void Kohonen::start() {
+void NeuralGas::start() {
+
     outCentroids = inCentroids;
     outputPoints = inputPoints;
     end = false;
     quantizationError = 0;
+
+    lambdaMax = outCentroids.size()/2;
+
+    // setting alpha for neurons
+    for(CPoint &i : outCentroids)
+        i.setAlpha(alphaMax);
 }
 
-bool Kohonen::update() {
+bool NeuralGas::update() {
 
-    for(int i=0; i<10; i++) {
+    double lambda;
+
+    for(int i=0;i<10;i++) {
+
         quantizationError = 0;
+        lambda = lambdaMax * pow((lambdaMin/lambdaMax),i/10.0); //!!!!!!!!!!!!!!!!!!//
         for(int w=0; w<outputPoints.size(); w++) {
-
-            // sortowanie
             for(int d=0;d<outCentroids.size();d++)
                 outCentroids[d].setDistance(countDistance(outputPoints[w],outCentroids[d]));
-
             qSort(outCentroids.begin(),outCentroids.end(),SortByDistance());
             quantizationError += outCentroids[0].getDistance();
-
-            for(int k=0;k<outCentroids[0].getDimensions();k++)
-                outCentroids[0].paramAt(k) += alpha * exp(-(outCentroids[0].getDistance()*outCentroids[0].getDistance()) /
-                        2.0*lambda*lambda) *
-                        (outputPoints[w].paramAt(k)-outCentroids[0].paramAt(k));
-
-            // sasiedztwo
-            for(int j=1; j<outCentroids.size();j++) {
-                double dist = countDistance(outCentroids[j],outCentroids[0]);
-                for(int k=0;k<outCentroids[0].getDimensions();k++)
-                    outCentroids[j].paramAt(k) = outCentroids[j].paramAt(k) + (alpha *
-                       exp(-(dist*dist)/(2.0*lambda*lambda)) * (outputPoints[w].paramAt(k) - outCentroids[j].paramAt(k)));
+            for(int j=0; j<outCentroids.size(); j++) {
+                outCentroids[j].setAlpha(alphaMax * pow((alphaMin/alphaMax),i/10.0)); //TMAX//
+                for(int k=0;k<outCentroids[j].getDimensions();k++) {
+                    outCentroids[j].paramAt(k) += outCentroids[j].getAlpha() * exp(-j/lambda) *
+                            (outputPoints[w].paramAt(k) - outCentroids[j].paramAt(k));
+                }
             }
-
         }
-        qDebug() << "Kohonen iteration: " << i;
+        qDebug() << "Iteration: " << i;
         quantizationError /= outputPoints.size();
     }
+
     return false;
 }
 
-void Kohonen::normalizePoints(double size) {
+void NeuralGas::normalizePoints(double size) {
 
     // getting min and max
     double min=0,max=0;
@@ -106,17 +109,7 @@ void Kohonen::normalizePoints(double size) {
 
 // ============= PRIVATE =============== //
 
-double Kohonen::countDistance(KPoint &i, CPoint &j) {
-    double result = 0;
-
-    for(int k=0;k<i.getDimensions();k++) {
-        result += (i.getParams()[k] - j.getParams()[k]) * (i.getParams()[k] - j.getParams()[k]);
-    }
-
-    return sqrt(result);
-}
-
-double Kohonen::countDistance(CPoint &i, CPoint &j) {
+double NeuralGas::countDistance(KPoint &i, CPoint &j) {
     double result = 0;
 
     for(int k=0;k<i.getDimensions();k++) {

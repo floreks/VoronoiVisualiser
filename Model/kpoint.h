@@ -13,10 +13,11 @@ public:
     KPoint(QVector<double> params);
     KPoint();
 
+    double &paramAt(WORD index) { return params[index]; }
     void setParams(QVector<double> params);
     void setGroup(WORD groupNr);
 
-    QVector<double>& getParams() {return params;}
+    QVector<double> getParams()const {return params;}
     WORD getDimensions()const { return params.size(); }
     WORD getGroup()const { return groupNr; }
 };

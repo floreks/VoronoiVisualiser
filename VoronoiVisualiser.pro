@@ -6,7 +6,7 @@
 
 QT       += core gui
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets core
 
 QMAKE_CXXFLAGS += -std=c++0x
 
@@ -22,7 +22,8 @@ SOURCES += main.cpp\
     Controller/kmeans.cpp \
     Model/cpoint.cpp \
     Model/kpoint.cpp \
-    Controller/kohonen.cpp
+    Controller/kohonen.cpp \
+    Controller/neuralgas.cpp
 
 HEADERS  += mainwindow.h \
     Fortune/VPoint.h \
@@ -35,7 +36,8 @@ HEADERS  += mainwindow.h \
     Controller/kmeans.h \
     Model/cpoint.h \
     Model/kpoint.h \
-    Controller/kohonen.h
+    Controller/kohonen.h \
+    Controller/neuralgas.h
 
 
 FORMS    += mainwindow.ui

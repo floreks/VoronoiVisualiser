@@ -26,6 +26,7 @@ void KMeans::randomizeCentroids(WORD quantity, BYTE dimensions, double min, doub
 }
 
 void KMeans::start() {
+
     outCentroids = inCentroids;
     outputPoints = inputPoints;
     end = false;
@@ -82,10 +83,10 @@ void KMeans::normalizePoints(double size) {
 
     for(int i=0;i<inputPoints.size();i++) {
         for(int j=0;j<inputPoints[i].getParams().size();j++) {
-            if(min > inputPoints[i].getParams()[j])
-                min = inputPoints[i].getParams()[j];
-            if(max < inputPoints[i].getParams()[j])
-                max = inputPoints[i].getParams()[j];
+            if(min > inputPoints[i].paramAt(j))
+                min = inputPoints[i].paramAt(j);
+            if(max < inputPoints[i].paramAt(j))
+                max = inputPoints[i].paramAt(j);
         }
     }
 
@@ -93,8 +94,8 @@ void KMeans::normalizePoints(double size) {
 
     for(int i=0;i<inputPoints.size();i++) {
         for(int j=0;j<inputPoints[i].getParams().size();j++) {
-            inputPoints[i].getParams()[j] += abs(min);
-            inputPoints[i].getParams()[j] *= multiplier;
+            inputPoints[i].paramAt(j) += abs(min);
+            inputPoints[i].paramAt(j) *= multiplier;
         }
     }
 }
@@ -108,7 +109,7 @@ double KMeans::countDistance(KPoint &i, CPoint &j) {
         result += (i.getParams()[k] - j.getParams()[k]) * (i.getParams()[k] - j.getParams()[k]);
     }
 
-    return result;
+    return sqrt(result);
 }
 
 void KMeans::setGroup(KPoint &point, QVector<CPoint> &centroids) {

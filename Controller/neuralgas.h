@@ -1,28 +1,27 @@
-#ifndef KOHONEN_H
-#define KOHONEN_H
+#ifndef NEURALGAS_H
+#define NEURALGAS_H
 
 #include <Model/cpoint.h>
 #include <Model/kpoint.h>
 
-class Kohonen
+class NeuralGas
 {
 private:
     QVector<KPoint> inputPoints, outputPoints;
     QVector<CPoint> inCentroids, outCentroids;
     bool end;
     double quantizationError;
-    double alpha,lambda;
+    double alphaMin, alphaMax, lambdaMin, lambdaMax;
 
     double countDistance(KPoint &i, CPoint &j);
-    double countDistance(CPoint &i, CPoint &j);
 public:
-    Kohonen(QVector<KPoint> &inputData);
-    Kohonen(QVector<KPoint> &inputData, QVector<CPoint> &centroids);
-    Kohonen();
-    Kohonen(double alpha, double lambda);
+    NeuralGas(QVector<KPoint> &inputData);
+    NeuralGas(QVector<KPoint> &inputData, QVector<CPoint> &centroids);
+    NeuralGas();
+    NeuralGas(double alphaMin, double alphaMax, double lambdaMin);
 
     void normalizePoints(double size);
-    void setAlpha(double alpha) { this->alpha = alpha; }
+    void setAlpha(double alpha) { this->alphaMax = alpha; }
     void setInputData(QVector<KPoint> &inputData);
     void setCentroids(QVector<CPoint> &centroids);
 
@@ -36,4 +35,4 @@ public:
     double getQuantizationError()const { return quantizationError; }
 };
 
-#endif // KOHONEN_H
+#endif // NEURALGAS_H
