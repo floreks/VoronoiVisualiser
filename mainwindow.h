@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QTimer>
 #include <QPainter>
+#include <QProgressDialog>
 
 #include <chrono>
 
@@ -43,6 +44,9 @@ private slots:
     void setData();
     void setCentroids();
     void doAction();
+    void loadImage();
+    void exportImage();
+    void neuralGasImageSwitch();
 private:
     Ui::MainWindow *ui;
 
@@ -59,6 +63,7 @@ private:
     QVector<QColor> colors;
     QPainter painter;
     PaintSwitch switcher;
+    QSize imageSize;
 
     QColor generateColor();
     void generatePoints();

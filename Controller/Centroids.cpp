@@ -50,3 +50,13 @@ QVector<KPoint> Centroids::randomizePoints(WORD quantity, BYTE dimensions, doubl
 
     return result;
 }
+
+double Centroids::countDistance(CPoint &i, KPoint &j) {
+    double result = 0;
+
+    for(int k=0;k<i.getDimensions();k++) {
+        result += (i.getParams()[k] - j.getParams()[k]) * (i.getParams()[k] - j.getParams()[k]);
+    }
+
+    return sqrt(result);
+}

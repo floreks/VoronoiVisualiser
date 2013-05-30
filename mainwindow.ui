@@ -19,7 +19,20 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
-  <widget class="QWidget" name="centralWidget"/>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QGridLayout" name="gridLayout_2">
+    <item row="0" column="0">
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="0">
+       <widget class="QGraphicsView" name="graphicsView"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QGraphicsView" name="graphicsView_2"/>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
@@ -37,8 +50,13 @@
     <addaction name="actionKohonen_s_Algorithm"/>
     <addaction name="actionNeural_Gas_Algorithm"/>
     <addaction name="separator"/>
+    <addaction name="actionNeural_Gas_Image"/>
+    <addaction name="actionExport_Image"/>
+    <addaction name="separator"/>
     <addaction name="actionSet_Centroids"/>
+    <addaction name="separator"/>
     <addaction name="actionSet_Data"/>
+    <addaction name="actionLoad_image"/>
    </widget>
    <addaction name="menuMenu"/>
   </widget>
@@ -64,7 +82,22 @@
   </action>
   <action name="actionSet_Data">
    <property name="text">
-    <string>Set Data</string>
+    <string>Load data</string>
+   </property>
+  </action>
+  <action name="actionLoad_image">
+   <property name="text">
+    <string>Load image</string>
+   </property>
+  </action>
+  <action name="actionNeural_Gas_Image">
+   <property name="text">
+    <string>Neural Gas Image</string>
+   </property>
+  </action>
+  <action name="actionExport_Image">
+   <property name="text">
+    <string>Export Image</string>
    </property>
   </action>
  </widget>

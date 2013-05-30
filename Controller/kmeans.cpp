@@ -2,6 +2,7 @@
 
 #include "Controller/Centroids.h"
 #include <QDebug>
+#include <QProgressDialog>
 
 KMeans::KMeans(QVector<KPoint> &inputData) : inputPoints(inputData), end(false) {
 }

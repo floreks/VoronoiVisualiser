@@ -6,6 +6,11 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QImageReader>
+#include <QImage>
+#include <QRgb>
+#include <QImageWriter>
+#include <QProgressDialog>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -13,8 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     this->setGeometry(300,50,600,600);
-    this->setWindowTitle("Voronoi diagram");
-    //this->setPalette();
+    this->setWindowTitle("Self-organizing Maps");
 
     edg = new Edges();
     ver = new Vertices();
@@ -28,12 +32,20 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->actionKohonen_s_Algorithm->setEnabled(false);
     ui->actionNeural_Gas_Algorithm->setEnabled(false);
     ui->actionSet_Data->setEnabled(false);
+    ui->actionExport_Image->setEnabled(false);
+    ui->actionLoad_image->setEnabled(false);
+    ui->actionNeural_Gas_Image->setEnabled(false);
+    ui->graphicsView->setVisible(false);
+    ui->graphicsView_2->setVisible(false);
 
     connect(ui->actionSet_Data,SIGNAL(triggered()),this,SLOT(setData()));
     connect(ui->actionSet_Centroids,SIGNAL(triggered()),this,SLOT(setCentroids()));
     connect(ui->actionKMeans_Algorithm,SIGNAL(triggered()),this,SLOT(kmeansSwitch()));
     connect(ui->actionKohonen_s_Algorithm,SIGNAL(triggered()),this,SLOT(kohonenSwitch()));
     connect(ui->actionNeural_Gas_Algorithm,SIGNAL(triggered()),this,SLOT(neuralGasSwitch()));
+    connect(ui->actionLoad_image,SIGNAL(triggered()),this,SLOT(loadImage()));
+    connect(ui->actionExport_Image,SIGNAL(triggered()),this,SLOT(exportImage()));
+    connect(ui->actionNeural_Gas_Image,SIGNAL(triggered()),this,SLOT(neuralGasImageSwitch()));
 
     QShortcut *repaint = new QShortcut(QKeySequence("SPACE"),this);
     connect(repaint,SIGNAL(activated()),this,SLOT(doAction()));
@@ -99,6 +111,14 @@ void MainWindow::kohonenSwitch() {
     update();
 }
 
+void MainWindow::neuralGasImageSwitch() {
+    nGas.start();
+    this->setEnabled(false);
+    if(nGas.update(this))
+        ui->actionExport_Image->setEnabled(true);
+    this->setEnabled(true);
+}
+
 void MainWindow::setData() {
 
     switcher = PaintSwitch::NOTHING;
@@ -138,6 +158,93 @@ void MainWindow::setData() {
     qDebug() << "Loaded " << points.size() << " points.";
 }
 
+void MainWindow::loadImage() {
+
+    QImageReader reader;
+    reader.setFileName(QFileDialog::getOpenFileName(this,tr("Open image"),"C:\\Users\\GiBSoN\\Desktop",tr("Image files (*.jpg *.png)")));
+    QImage image = reader.read();
+    imageSize = image.size();
+
+    QVector<double> params;
+    QVector<KPoint> points;
+
+    for(int i=0;i<image.width();i++) {
+        for(int j=0;j<image.height();j++) {
+            params.push_back(qRed(image.pixel(i,j)));
+            params.push_back(qGreen(image.pixel(i,j)));
+            params.push_back(qBlue(image.pixel(i,j)));
+            points.push_back(params);
+            params.clear();
+        }
+    }
+
+    nGas.setInputData(points);
+
+    ui->actionNeural_Gas_Image->setEnabled(true);
+
+    ui->graphicsView->setVisible(true);
+    ui->graphicsView_2->setVisible(true);
+
+    QGraphicsScene* scene = new QGraphicsScene(this);
+    ui->graphicsView->setScene(scene);
+    scene->addPixmap(QPixmap::fromImage(image.scaled(ui->graphicsView->width()*0.95,ui->graphicsView->height()*0.95)));
+    ui->graphicsView->show();
+
+    qDebug() << "Pixels: " << points.size() << " Dimensions: " << points[0].getDimensions();
+}
+
+// ================= COMPARATOR =================== //
+
+class SortByDistance {
+public:
+    bool operator() (CPoint i, CPoint j) {
+        return i.getDistance() < j.getDistance();
+    }
+};
+
+void MainWindow::exportImage() {
+
+    QVector<CPoint> centroids = nGas.getCentroids();
+    QVector<KPoint> points = nGas.getPoints();
+
+    QImage image(imageSize,QImage::Format_RGB32);
+
+    QProgressDialog progress(this);
+    progress.setWindowTitle("Self-organizing maps");
+    progress.setLabelText("Generating file...");
+    progress.setModal(true);
+    progress.show();
+
+    int k = 0;
+
+    for(int i=0;i<image.width();i++) {
+        progress.setValue(((double)i / (double)image.width()) * 100);
+        if(progress.wasCanceled())
+            return;
+
+        for(int j=0;j<image.height();j++) {
+            for(int d=0;d<centroids.size();d++)
+                centroids[d].setDistance(Centroids::countDistance(centroids[d],points[k]));
+            qSort(centroids.begin(),centroids.end(),SortByDistance());
+            image.setPixel(i,j,qRgb(centroids[0].paramAt(0),centroids[1].paramAt(1),centroids[2].paramAt(2)));
+            k++;
+        }
+    }
+
+    progress.setValue(100);
+
+    QGraphicsScene* scene = new QGraphicsScene(this);
+    ui->graphicsView_2->setScene(scene);
+    scene->addPixmap(QPixmap::fromImage(image.scaled(ui->graphicsView->width()*0.95,ui->graphicsView->height()*0.95)));
+    ui->graphicsView_2->show();
+
+    QImageWriter writer;
+    writer.setFileName(QFileDialog::getSaveFileName(this,tr("Open image"),"C:\\Users\\GiBSoN\\Desktop",tr("Image files (*.jpg *.png)")));
+    writer.setFormat("jpg");
+    writer.setCompression(10);
+    writer.write(image);
+}
+
 void MainWindow::setCentroids() {
 
     switcher = PaintSwitch::NOTHING;
@@ -159,7 +266,19 @@ void MainWindow::setCentroids() {
     kmeans.setCentroids(centroids);
     nGas.setCentroids(centroids);
     kohonen.setCentroids(centroids);
-    ui->actionSet_Data->setEnabled(true);
+    if(dimension == 2) {
+        ui->actionSet_Data->setEnabled(true);
+        ui->actionLoad_image->setEnabled(false);
+        ui->graphicsView->setVisible(false);
+        ui->graphicsView_2->setVisible(false);
+    }
+    if(dimension == 3) {
+        ui->actionLoad_image->setEnabled(true);
+        ui->actionSet_Data->setEnabled(false);
+        ui->actionKMeans_Algorithm->setEnabled(false);
+        ui->actionKohonen_s_Algorithm->setEnabled(false);
+        ui->actionNeural_Gas_Algorithm->setEnabled(false);
+    }
 }
 
 // ============= KMEANS Section ==================== //
@@ -226,9 +345,6 @@ void MainWindow::neuralGasUpdate(QPainter &painter) {
     QBrush brushColor(Qt::SolidPattern);
 
     painter.begin(this);
-
-    //penColor.setColor(QColor(Qt::black));
-    //painter.setPen(penColor);
 
     for(KPoint &i : nGas.getPoints()) {
         penColor.setColor(QColor(Qt::gray));
@@ -333,11 +449,11 @@ void MainWindow::doAction() {
         update();
         break;
     case(PaintSwitch::KOHONEN):
-        kohonen.update();
+        kohonen.update(this);
         update();
         break;
     case(PaintSwitch::NEURALGAS):
-        nGas.update();
+        nGas.update(this);
         update();
         break;
     case(PaintSwitch::NOTHING):

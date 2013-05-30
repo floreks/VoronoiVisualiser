@@ -15,6 +15,7 @@ private:
 public:
     static QVector<CPoint> randomizeCentroids(WORD quantity, BYTE dimensions, double min, double max);
     static QVector<KPoint> randomizePoints(WORD quantity, BYTE dimensions, double min, double max);
+    static double countDistance(CPoint &i, KPoint &j);
 };
 
 #endif

@@ -4,6 +4,8 @@
 #include <Model/cpoint.h>
 #include <Model/kpoint.h>
 
+#include <QObject>
+
 class Kohonen
 {
 private:
@@ -29,7 +31,7 @@ public:
     void randomizeCentroids(WORD quantity, BYTE dimensions, double min, double max);
 
     void start();
-    bool update();
+    bool update(QWidget *parent);
 
     QVector<CPoint> getCentroids()const { return outCentroids; }
     QVector<KPoint> getPoints()const { return outputPoints; }

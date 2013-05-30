@@ -2,6 +2,7 @@
 
 #include "Controller/Centroids.h"
 #include <QDebug>
+#include <QProgressDialog>
 
 class SortByDistance {
 public:
@@ -47,11 +48,26 @@ void Kohonen::start() {
     quantizationError = 0;
 }
 
-bool Kohonen::update() {
+bool Kohonen::update(QWidget *parent) {
+
+    QProgressDialog progress(parent);
+    progress.setLabelText("Teaching pattern...");
+    progress.setMinimum(0);
+    progress.setWindowTitle("Self-organizing maps");
+    progress.setMaximum(10*outputPoints.size());
+    progress.setValue(50);
+    progress.setCancelButtonText("Cancel");
+    progress.setModal(true);
+    progress.show();
+
+    int counter = 0;
 
     for(int i=0; i<10; i++) {
         quantizationError = 0;
         for(int w=0; w<outputPoints.size(); w++) {
+            progress.setValue(counter++);
+            if(progress.wasCanceled())
+                return false;
 
             // sortowanie
             for(int d=0;d<outCentroids.size();d++)
